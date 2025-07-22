@@ -3,13 +3,30 @@ import { paths } from "../hooks/paths";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { API } from "../hooks/getEnv";
+import { useContext } from "react";
+import { Context } from "../context/Context";
+import { jwtDecode } from "jwt-decode";
 
+interface TokenType {
+  id: string;
+}
 const Header = () => {
-  const { data: adminList } = useQuery({
+  const { token } = useContext(Context);
+  let currentAdminId = null;
+
+  if (token) {
+    const decoded = jwtDecode<TokenType>(token);
+    currentAdminId = decoded.id;
+  }
+
+  const { data: adminList = [] } = useQuery({
     queryKey: ["admin"],
-    queryFn: () => axios.get(`${API}/admin`).then((res) => res.data),
+    queryFn: () => axios.get(`${API}/api/admin`).then((res) => res.data),
   });
-  console.log(adminList, "sa");
+
+  const currentAdmin = adminList.find(
+    (admin: any) => admin.id === currentAdminId
+  );
 
   return (
     <div>
@@ -18,11 +35,10 @@ const Header = () => {
           <p>Просмотр веб-сайта</p>
         </NavLink>
         <div className="text-[#A6A6A6]">|</div>
-        {adminList?.map((admin:any) => (
-          <div key={admin.id} className="text-[#A6A6A6]">
-            {admin.username}
-          </div>
-        ))}{" "}
+        <div className="text-[#A6A6A6]">
+          
+          {currentAdmin?.username || "Username topilmadi"}
+        </div>
       </div>
     </div>
   );

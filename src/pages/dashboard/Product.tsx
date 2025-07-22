@@ -4,144 +4,231 @@ import {
   EditOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useState } from "react";
+import { useContext, useState, useEffect, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { Context } from "../../context/Context";
 import { API } from "../../hooks/getEnv";
-import type { CreateProductType, ProductType } from "../../types/ProductType";
-import { toast } from "react-toastify";
+import type { ProductType } from "../../types/ProductType";
 import ProductModal from "../../components/ProductModal";
-import { EditIcon } from "../../assets/icons";
+import useDebounce from "../../hooks/debounce";
+import { toast, ToastContainer } from "react-toastify";
 
 const Product = () => {
   const queryClient = useQueryClient();
-  const [name, setName] = useState("");
+  const { token } = useContext(Context);
+  const [search, setSearch] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
+    null
+  );
+  const CATEGORY_IDS = {
+    Каркасные: "6796f2c5-f2c7-411d-86de-b12e47269a15",
+    Надувные: "3eb8ebee-9ad9-4db7-8f92-bf84eca40dd4",
+  };
 
-  const [selectedType, setSelectedType] = useState<"karkas" | "naduvniy">(
-    "karkas"
+  function handleSearch(e: ChangeEvent<HTMLInputElement>) {
+    setLoading(true);
+    setSearch(e.target.value);
+  }
+  const searchQuery = useDebounce(search, 300);
+
+  const [selectedType, setSelectedType] = useState<"Каркасные" | "Надувные">(
+    "Каркасные"
   );
 
-  const { data: products = [] } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => axios.get(`${API}/products`).then((res) => res.data.data),
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    error: productsError,
+  } = useQuery({
+    queryKey: ["products", searchQuery, selectedType],
+    queryFn: () =>
+      axios
+        .get(`${API}/api/products`, {
+          params: {
+            search: searchQuery,
+            categoryId: CATEGORY_IDS[selectedType],
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          console.log("Serverdan olingan mahsulotlar:", res.data);
+          return res.data?.data || [];
+        })
+        .catch((error) => {
+          console.error("Mahsulotlarni olish xatosi:", error.response?.data);
+          throw error;
+        }),
+    enabled: !!token,
   });
 
   const { mutate: deleteProduct } = useMutation({
-    mutationFn: (id: number) => axios.delete(`${API}/products/${id}`),
+    mutationFn: (id: number) =>
+      axios.delete(`${API}/api/products/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.refetchQueries({ queryKey: ["products"] });
       toast.success("Продукт удален");
     },
-    onError: () => {
-      toast.error("Ошибка при удалении");
+    onError: (error: any) => {
+      console.log("O'chirish xatosi:", error.response?.data);
+      toast.error(
+        `Ошибка при удалении: ${
+          error.response?.data?.message || "Noma'lum xato"
+        }`
+      );
     },
   });
 
+  const handleEdit = (product: ProductType) => {
+    setSelectedProduct(product);
+    setEditMode(true);
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    console.log(
+      "isModalOpen:",
+      isModalOpen,
+      "editMode:",
+      editMode,
+      "selectedProduct:",
+      selectedProduct
+    );
+  }, [isModalOpen, editMode, selectedProduct]);
+
+  if (productsError) {
+    return <div>Mahsulotlarni yuklashda xato: {productsError.message}</div>;
+  }
+
   return (
-    <div className="p-[50px]">
-      <div className="flex justify-between items-center gap-4 mb-6">
-        <Input
-          style={{ height: "40px", borderRadius: "29px" }}
-          onChange={(e) => setName(e.target.value)}
-          value={name}
-          className="w-full max-w-[250px]"
-          placeholder="Найти"
-          size="middle"
-          suffix={<SearchOutlined />}
-        />
-        <Button
-          type="primary"
-          style={{
-            height: "50px",
-            borderRadius: "29px",
-            background: "#00b894",
-          }}
-          onClick={() => setIsModalOpen(true)}
-        >
-          <span className="text-white">+ Добавить продукт</span>
-        </Button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex justify-center gap-4 mt-4">
-        <button
-          onClick={() => setSelectedType("karkas")}
-          className={`relative px-6 py-2 text-[35px] transition-none ${
-            selectedType === "karkas"
-              ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
-              : "text-gray-500"
-          }`}
-        >
-          Каркасные
-        </button>
-        <button
-          onClick={() => setSelectedType("naduvniy")}
-          className={`relative px-6 py-2 text-[35px] transition-none ${
-            selectedType === "naduvniy"
-              ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
-              : "text-gray-500"
-          }`}
-        >
-          Надувные
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7 pl-[60px] mt-[60px] pt-[15px] rounded-[30px] text-[#000000] pb-2 mb-2 bg-[#FFFFFF] h-[55px] font-semibold text-center">
-        <div>Изображение</div>
-        <div>Цена (сум)</div>
-        <div>Количество</div>
-        <div>Рамка</div>
-        <div>Размер (м)</div>
-        <div>Глубина (см)</div>
-        <div>Действия</div>
-      </div>
-
-      {products.map((item: ProductType) => (
-        <div
-          key={item.id}
-          className="grid grid-cols-7 items-center pl-[40px] text-center gap-4 mt-4 bg-white rounded-[30px] h-[70px] shadow-sm "
-        >
-          <div className="flex justify-center">
-            <img
-              src={`${API}/file/${item.image}`}
-              alt="product"
-              className="w-[60px] h-[60px] object-cover rounded-md"
-            />
-          </div>
-          <div className="text-base font-medium">{item.price}</div>
-          <div className="text-base font-medium">{item.quantity}</div>
-          <div className="text-base font-medium">{item.frame_ru}</div>
-          <div className="text-base font-medium">{item.size}</div>
-          <div className="text-base font-medium">{item.depth} см</div>
-          <div className="flex justify-center gap-2">
-            <Button
-              type="default"
-              icon={<EditIcon />}
-              size="middle"
-              onClick={() => {
-                setIsModalOpen(true);
-              }}
-            />
-            <Popconfirm
-              title="Вы уверены, что хотите удалить?"
-              onConfirm={() => deleteProduct(item.id)}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <Button
-                type="default"
-                danger
-                icon={<DeleteOutlined />}
-                size="middle"
-              />
-            </Popconfirm>
-          </div>
+    <>
+      <ToastContainer />
+      <div className="p-[50px]">
+        <div className="flex justify-between items-center gap-4 mb-6">
+          <Input
+            style={{ height: "40px", borderRadius: "29px" }}
+            onChange={handleSearch}
+            value={search}
+            className="w-full max-w-[250px]"
+            placeholder="Найти"
+            size="middle"
+            suffix={<SearchOutlined />}
+          />
+          <Button
+            type="primary"
+            style={{
+              height: "50px",
+              borderRadius: "29px",
+              background: "#00b894",
+            }}
+            onClick={() => {
+              setEditMode(false);
+              setSelectedProduct(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <span className="text-white">+ Добавить продукт</span>
+          </Button>
         </div>
-      ))}
 
-      <ProductModal open={isModalOpen} onClose={() => setIsModalOpen(false)} />
-    </div>
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => setSelectedType("Каркасные")}
+            className={`relative px-6 py-2 text-[35px] transition-none ${
+              selectedType === "Каркасные"
+                ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
+                : "text-gray-500"
+            }`}
+          >
+            Каркасные
+          </button>
+          <button
+            onClick={() => setSelectedType("Надувные")}
+            className={`relative px-6 py-2 text-[35px] transition-none ${
+              selectedType === "Надувные"
+                ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
+                : "text-gray-500"
+            }`}
+          >
+            Надувные
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 pl-[60px] mt-[60px] pt-[15px] rounded-[30px] text-[#000000] pb-2 mb-2 bg-[#FFFFFF] h-[55px] font-semibold text-center">
+          <div>Изображение</div>
+          <div>Цена (сум)</div>
+          <div>Количество</div>
+          <div>Рамка</div>
+          <div>Размер (м)</div>
+          <div>Глубина (см)</div>
+          <div>Действия</div>
+        </div>
+
+        {productsLoading ? (
+          <div>Loading...</div>
+        ) : (
+          products
+            .filter((item: ProductType) => item.Category?.name === selectedType)
+            .map((item: ProductType) => (
+              <div
+                key={item.id}
+                className="grid grid-cols-7 items-center pl-[70px] text-center gap-4 mt-4 bg-white rounded-[30px] h-[70px] shadow-sm"
+              >
+                <div className="flex justify-center  w-[80px] h-[60px] ml-[20px] overflow-hidden rounded-md">
+                  <img
+                    src={`http://server.rtudarsjadvali.uz/uploads/${item.image}`}
+                    alt="product"
+                    className="object-contain w-full h-full"
+                  />
+                </div>
+
+                <div className="text-base font-medium">{item.price}</div>
+                <div className="text-base font-medium">{item.quantity}</div>
+                <div className="text-base font-medium">{item.frame_ru}</div>
+                <div className="text-base font-medium">{item.size}</div>
+                <div className="text-base font-medium">{item.depth} см</div>
+                <div className="flex justify-center gap-2">
+                  <button
+                    className="text-blue-500"
+                    onClick={() => handleEdit(item)}
+                  >
+                    <EditOutlined />
+                  </button>
+                  <Popconfirm
+                   
+                    title="Вы уверены, что хотите удалить этот продукт?"
+                    onConfirm={() => deleteProduct(item.id)}
+                    okText="Да"
+                    placement="leftBottom"
+                    cancelText="Нет"
+                  >
+                    <button className="text-red-500">
+                      <DeleteOutlined />
+                    </button>
+                  </Popconfirm>
+                </div>
+              </div>
+            ))
+        )}
+
+        <ProductModal
+          open={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditMode(false);
+            setSelectedProduct(null);
+          }}
+          editMode={editMode}
+          initialData={selectedProduct}
+        />
+      </div>
+    </>
   );
 };
 

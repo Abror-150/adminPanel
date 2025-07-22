@@ -4,7 +4,7 @@ import Heading from "../components/Heading";
 
 const Navbar = () => {
   return (
-    <nav className="w-[262px] h-[100vh] bg-[#FFFFFF] relative z-50">
+    <nav className="w-[262px] min-h-screen bg-white relative z-50">
       <div className="pt-[34px] pl-[50px]">
         <Heading classList="!text-[18px]" tag="h3">
           INTEX-MARKET.UZ

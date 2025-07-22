@@ -4,61 +4,42 @@ import {
   EyeFilled,
   SearchOutlined,
 } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Input } from "antd";
+import axios from "axios";
 import { useState } from "react";
+import { API } from "../../hooks/getEnv";
+import type { ZakasType } from "../../types/ZakasType";
+import { toast, ToastContainer } from "react-toastify";
 
 const Zakas = () => {
   const [name, setName] = useState<string>("");
+  const queryClient = useQueryClient();
+
   const [selectedType, setSelectedType] = useState<"Заказы" | "Консультации">(
     "Заказы"
   );
+  const { data: zakasLists = [] } = useQuery({
+    queryKey: ["orders"],
+    queryFn: () => axios.get(`${API}/api/orders`).then((res) => res.data?.data),
+  });
 
-  const zakasData = [
-    {
-      id: 1,
-      clientName: "Ибрагимов Умид",
-      phone: " 90 123 45 67",
-      image: "/images/basseyn1.jpg",
-      size: "3x2",
-      depth: 100,
-      price: "1 200 000 сум",
-      address: "Ташкент, Чиланзар",
-      time: "2025-07-18 15:30",
+  const { mutate: deleteOrders } = useMutation({
+    mutationFn: (id: number) => axios.delete(`${API}/api/orders/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.refetchQueries({ queryKey: ["products"] });
+      toast.success("Продукт удален");
     },
-    {
-      id: 2,
-      clientName: "Норматов Жамшид",
-      phone: " 93 765 43 21",
-      image: "/images/basseyn2.jpg",
-      size: "4x2",
-      depth: 120,
-      price: "1 500 000 сум",
-      address: "Самарканд, Регистан",
-      time: "2025-07-18 12:00",
+    onError: (error: any) => {
+      console.log("O'chirish xatosi:", error.response?.data);
+      toast.error(
+        `Ошибка при удалении: ${
+          error.response?.data?.message || "Noma'lum xato"
+        }`
+      );
     },
-    {
-      id: 3,
-      clientName: "Каримова Азиза",
-      phone: " 99 876 54 32",
-      image: "/images/basseyn3.jpg",
-      size: "2.5x1.5",
-      depth: 90,
-      price: "950 000 сум",
-      address: "Фергана, Кува",
-      time: "2025-07-17 17:45",
-    },
-    {
-      id: 4,
-      clientName: "Тошпулатов Маъруф",
-      phone: " 91 345 67 89",
-      image: "/images/basseyn4.jpg",
-      size: "5x3",
-      depth: 140,
-      price: "2 100 000 сум",
-      address: "Бухара, Центр",
-      time: "2025-07-18 10:00",
-    },
-  ];
+  });
 
   const consultationData = [
     {
@@ -81,115 +62,122 @@ const Zakas = () => {
     },
   ];
 
-  const dataToRender = selectedType === "Заказы" ? zakasData : consultationData;
+  const dataToRender =
+    selectedType === "Заказы" ? zakasLists : consultationData;
 
   return (
-    <div className="p-[50px]">
-      <div className="flex justify-between items-center gap-4 mb-6">
-        <Input
-          style={{ height: "40px", borderRadius: "29px" }}
-          onChange={(e) => setName(e.target.value)}
-          value={name}
-          className="h-[40px] rounded-[20px] w-full max-w-[250px]"
-          placeholder="Найти"
-          size="middle"
-          suffix={<SearchOutlined />}
-        />
-      </div>
+    <>
+      <ToastContainer />
 
-      <div className="flex justify-center gap-4 mt-4">
-        <button
-          onClick={() => setSelectedType("Заказы")}
-          className={`relative px-6 py-2 bg-transparent text-[35px] transition-none ${
-            selectedType === "Заказы"
-              ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
-              : "text-gray-500"
-          }`}
-        >
-          Заказы
-        </button>
-        <button
-          onClick={() => setSelectedType("Консультации")}
-          className={`relative px-6 py-2 bg-transparent text-[35px] transition-none ${
-            selectedType === "Консультации"
-              ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
-              : "text-gray-500"
-          }`}
-        >
-          Консультации
-        </button>
-      </div>
-
-      {selectedType === "Заказы" ? (
-        <div className="grid grid-cols-8 mt-[60px] pt-[10px]  pl-[60px] text-[#000000] py-2 mb-2 bg-[#FFFFFF] rounded-[30px] h-[55px] font-semibold">
-          <div>Имя клиента</div>
-          <div>Изображение</div>
-          <div>Телефон</div>
-          <div className="pb-[100px]">Размер(м)/Глубина(см)</div>
-          <div>Цена(сум)</div>
-          <div>Адрес</div>
-          <div>Время</div>
-          <div>Действия</div>
+      <div className="p-[50px] h-[1000px]">
+        <div className="flex justify-between items-center gap-4 mb-6">
+          <Input
+            style={{ height: "40px", borderRadius: "29px" }}
+            onChange={(e) => setName(e.target.value)}
+            value={name}
+            className="h-[40px] rounded-[20px] w-full max-w-[250px]"
+            placeholder="Найти"
+            size="middle"
+            suffix={<SearchOutlined />}
+          />
         </div>
-      ) : (
-        <div className="grid grid-cols-4 mt-[60px] pl-[60px] text-[#000000] py-2 mb-2 bg-[#FFFFFF] rounded-[30px] h-[55px] font-semibold">
-          <div>Имя клиента</div>
-          <div>Телефон клиента</div>
-          <div>Время</div>
-          <div>Действия</div>
-        </div>
-      )}
 
-      {selectedType === "Заказы"
-        ? zakasData.map((item) => (
-            <div
-              key={item.id}
-              className="grid grid-cols-8 items-center pb-[10px] gap-2 mt-[20px] py-2 pl-[60px] bg-[#FFFFFF] rounded-[30px] h-[60px]"
-            >
-              <div>{item.clientName}</div>
-              <div>{item.phone}</div>
-              <div>
-                <img
-                  src={item.image}
-                  alt="basseyn"
-                  className="w-[70px] h-[60px] object-cover rounded-md"
-                />
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => setSelectedType("Заказы")}
+            className={`relative px-6 py-2 bg-transparent text-[35px] transition-none ${
+              selectedType === "Заказы"
+                ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
+                : "text-gray-500"
+            }`}
+          >
+            Заказы
+          </button>
+          <button
+            onClick={() => setSelectedType("Консультации")}
+            className={`relative px-6 py-2 bg-transparent text-[35px] transition-none ${
+              selectedType === "Консультации"
+                ? "text-[#009398] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-[#009398]"
+                : "text-gray-500"
+            }`}
+          >
+            Консультации
+          </button>
+        </div>
+
+        {selectedType === "Заказы" ? (
+          <div className="grid grid-cols-8 mt-[60px] pt-[10px]  pl-[60px] text-[#000000] py-2 mb-2 bg-[#FFFFFF] rounded-[30px] h-[55px] font-semibold">
+            <div>Имя клиента</div>
+            <div>Телефон</div>
+            <div>Изображение</div>
+            <div>Размер(м)/Глубина(см)</div>
+            <div>Цена(сум)</div>
+            <div>Адрес</div>
+            <div>Время</div>
+            <div>Действия</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 mt-[60px] pl-[60px] text-[#000000] py-2 mb-2 bg-[#FFFFFF] rounded-[30px] h-[55px] font-semibold">
+            <div>Имя клиента</div>
+            <div>Телефон клиента</div>
+            <div>Время</div>
+            <div>Действия</div>
+          </div>
+        )}
+
+        {selectedType === "Заказы"
+          ? zakasLists.map((item: ZakasType) => (
+              <div
+                key={item.id}
+                className="grid grid-cols-8 items-center gap-2 mt-[20px] py-3 pl-[60px] bg-[#FFFFFF] rounded-[30px] min-h-[60px] overflow-hidden"
+              >
+                <div className="truncate max-w-[140px]">{item.name}</div>
+                <div className="truncate max-w-[140px]">{item.phone}</div>
+                <div className="flex justify-center">
+                  <img
+                    src={`http://server.rtudarsjadvali.uz/uploads/${item.Products.image}`}
+                    alt="product"
+                    className="w-[100px] h-[40px] object-cover rounded-[30px]"
+                  />
+                </div>
+                <div className="truncate max-w-[140px]">
+                  {item.Products.size} / {item.Products.depth} см
+                </div>
+                <div className="truncate max-w-[120px]">
+                  {item.Products.price}
+                </div>
+                <div className="truncate max-w-[180px]">{item.adress}</div>
+                <div className="truncate max-w-[180px]">{item.createdAt}</div>
+                <div className="flex space-x-3 justify-center min-w-[100px]">
+                  <button className="text-yellow-500">
+                    <EditOutlined />
+                  </button>
+                  <button className="text-red-500">
+                    <DeleteOutlined />
+                  </button>
+                </div>
               </div>
-              <div>
-                {item.size} / {item.depth} см
+            ))
+          : consultationData.map((item) => (
+              <div
+                key={item.id}
+                className="grid grid-cols-4 items-center gap-2 mt-[20px] py-2 pl-[60px] bg-[#FFFFFF] rounded-[30px] h-[60px]"
+              >
+                <div>{item.clientName}</div>
+                <div>{item.phone}</div>
+                <div>{item.time}</div>
+                <div className="space-x-2">
+                  <button className="text-blue-500">
+                    <EyeFilled />
+                  </button>
+                  <button className="text-red-500">
+                    <DeleteOutlined />
+                  </button>
+                </div>
               </div>
-              <div>{item.price}</div>
-              <div>{item.address}</div>
-              <div>{item.time}</div>
-              <div className="space-x-3">
-                <button className="text-yellow-500">
-                  <EditOutlined />
-                </button>
-                <button className="text-red-500">
-                  <DeleteOutlined />
-                </button>
-              </div>
-            </div>
-          ))
-        : consultationData.map((item) => (
-            <div
-              key={item.id}
-              className="grid grid-cols-4 items-center gap-2 mt-[20px] py-2 pl-[60px] bg-[#FFFFFF] rounded-[30px] h-[60px]"
-            >
-              <div>{item.clientName}</div>
-              <div>{item.phone}</div>
-              <div>{item.time}</div>
-              <div className="space-x-2">
-                <button className="text-blue-500">
-                  <EyeFilled />
-                </button>
-                <button className="text-red-500">
-                  <DeleteOutlined />
-                </button>
-              </div>
-            </div>
-          ))}
-    </div>
+            ))}
+      </div>
+    </>
   );
 };
 

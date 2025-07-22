@@ -4,9 +4,9 @@ import { DashboardRoute } from "../routes";
 
 const Layout = () => {
   return (
-    <div className="flex bg-[#e0e0e0] h-screen">
+    <div className="flex min-h-screen overflow-hidden bg-[#e0e0e0]">
       <Navbar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-auto">
         <Header />
         <DashboardRoute />
       </div>

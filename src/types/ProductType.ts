@@ -1,5 +1,4 @@
 export interface ProductType {
-  categoryId: string;
   depth: number;
   discountedPrice: 10000;
   frame_en?: string;
@@ -10,6 +9,10 @@ export interface ProductType {
   price: number;
   quantity: number;
   size: string;
+  Category: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface CreateProductType {

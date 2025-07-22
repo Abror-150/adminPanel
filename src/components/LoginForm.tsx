@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import type { FormProps } from "antd";
 import { Button, Form, Input } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { API } from "../hooks/getEnv";
+import { Context } from "../context/Context";
 
 type FieldType = {
   username?: string;
@@ -16,16 +17,25 @@ type FieldType = {
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
+  const { setToken } = useContext(Context);
   const { mutate: loginAdmin } = useMutation({
     mutationFn: (loginData: { username: string; password: string }) =>
-      axios.post(`${API}/admin/login`, loginData),
+      axios.post(`${API}/api/admin/login`, loginData, {
+        withCredentials: true,
+      }),
+
     onSuccess: (res) => {
+      const token = res.data?.token;
+      console.log(token);
+
+      setToken(token);
       toast.success("Muvaffaqиятли кирилди!");
-      setTimeout(() => navigate("/products"), 1500);
       queryClient.invalidateQueries({ queryKey: ["admin"] });
+      setTimeout(() => navigate("/products"), 1000);
     },
-    onError: () => {
+
+    onError: (error: any) => {
+      console.log("Login xatosi:", error.response?.data || error.message);
       toast.error("Логин ёки пароль нотўғри!");
     },
   });
