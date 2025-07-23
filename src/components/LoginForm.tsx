@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import type { FormProps } from "antd";
 import { Button, Form, Input } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,7 @@ const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { setToken } = useContext(Context);
+  const [loading, setLoading] = useState<boolean>(false);
   const { mutate: loginAdmin } = useMutation({
     mutationFn: (loginData: { username: string; password: string }) =>
       axios.post(`${API}/api/admin/login`, loginData, {
@@ -26,21 +27,25 @@ const LoginForm: React.FC = () => {
 
     onSuccess: (res) => {
       const token = res.data?.token;
-      console.log(token);
 
       setToken(token);
       toast.success("Muvaffaqиятли кирилди!");
       queryClient.invalidateQueries({ queryKey: ["admin"] });
-      setTimeout(() => navigate("/products"), 1000);
+      setTimeout(() => {
+        setLoading(false);
+        navigate("/products");
+      }, 2000);
     },
 
     onError: (error: any) => {
       console.log("Login xatosi:", error.response?.data || error.message);
       toast.error("Логин ёки пароль нотўғри!");
+      setLoading(false);
     },
   });
 
   const onFinish: FormProps<FieldType>["onFinish"] = (values) => {
+    setLoading(true);
     loginAdmin({
       username: values.username!,
       password: values.password!,
@@ -92,6 +97,7 @@ const LoginForm: React.FC = () => {
 
         <Form.Item>
           <Button
+            loading={loading}
             className="w-[150px] h-[47.89px] ml-[30px]"
             type="primary"
             htmlType="submit"

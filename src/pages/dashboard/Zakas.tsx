@@ -5,31 +5,82 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Input } from "antd";
+import { Input, Modal } from "antd";
 import axios from "axios";
-import { useState } from "react";
+import { useContext, useState, type ChangeEvent } from "react";
 import { API } from "../../hooks/getEnv";
 import type { ZakasType } from "../../types/ZakasType";
 import { toast, ToastContainer } from "react-toastify";
+import type { ConsultionType } from "../../types/Consultion";
+import { formatTime } from "../../hooks/formatTime";
+import { Context } from "../../context/Context";
+import useDebounce from "../../hooks/debounce";
 
 const Zakas = () => {
-  const [name, setName] = useState<string>("");
   const queryClient = useQueryClient();
+  const { token } = useContext(Context);
+  const [search, setSearch] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const searchQuery = useDebounce(search, 300);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [selectId, setSelectedId] = useState<string | null>("");
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
   const [selectedType, setSelectedType] = useState<"Заказы" | "Консультации">(
     "Заказы"
   );
   const { data: zakasLists = [] } = useQuery({
-    queryKey: ["orders"],
-    queryFn: () => axios.get(`${API}/api/orders`).then((res) => res.data?.data),
+    queryKey: ["orders", searchQuery],
+    queryFn: () =>
+      axios
+        .get(`${API}/api/orders`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            search: searchQuery,
+          },
+        })
+        .then((res) => res.data?.data),
+    enabled: selectedType === "Заказы",
   });
 
-  const { mutate: deleteOrders } = useMutation({
-    mutationFn: (id: number) => axios.delete(`${API}/api/orders/${id}`, {}),
+  const { mutate: deleteOrders, isLoading: isOrders } = useMutation({
+    mutationFn: (id: string) =>
+      axios.delete(`${API}/api/orders/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.refetchQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Продукт удален");
+      setIsModalOpen(false);
+      setSelectedId(null);
+    },
+    onError: (error: any) => {
+      console.error("O'chirish xatosi:", error.response?.data);
+      toast.error(
+        `Ошибка при удалении: ${
+          error.response?.data?.message || "Noma'lum xato"
+        }`
+      );
+      setIsModalOpen(false);
+    },
+  });
+  const { mutate: deleteConsultation, isLoading: isConsul } = useMutation({
+    mutationFn: (id: string) =>
+      axios.delete(`${API}/api/consultatsiya/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consultion"] });
+      toast.success("консультация удален");
+      setIsModalOpen(false);
+      setSelectedId(null);
     },
     onError: (error: any) => {
       console.log("O'chirish xatosi:", error.response?.data);
@@ -41,29 +92,40 @@ const Zakas = () => {
     },
   });
 
-  const consultationData = [
-    {
-      id: 1,
-      clientName: "Аброр Уразалиев",
-      phone: " 95 892 08 10",
-      time: "2025-07-18 14:30",
-    },
-    {
-      id: 2,
-      clientName: "Саида Абдуллаева",
-      phone: " 90 123 45 67",
-      time: "2025-07-18 15:00",
-    },
-    {
-      id: 3,
-      clientName: "Бобур Исломов",
-      phone: " 93 765 43 21",
-      time: "2025-07-18 16:45",
-    },
-  ];
+  const { data: consultationList = [] } = useQuery({
+    queryKey: ["consultion", searchQuery],
+    queryFn: () =>
+      axios
+        .get(`${API}/api/consultatsiya`, {
+          params: {
+            search: searchQuery,
+          },
+        })
+        .then((res) => res.data?.data),
+    enabled: selectedType == "Консультации",
+  });
+  const [check, setCheck] = useState(false);
+
+  const handleClick = () => {
+    setCheck((prev) => !prev);
+  };
+  function handleSearch(e: ChangeEvent<HTMLInputElement>) {
+    setLoading(true);
+    setSearch(e.target.value);
+  }
+  const showDeleteModal = (id: number) => {
+    setSelectedId(id);
+    setIsModalOpen(true);
+  };
+  const handleCheckToggle = (id: number) => {
+    setCheckedItems((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   const dataToRender =
-    selectedType === "Заказы" ? zakasLists : consultationData;
+    selectedType === "Заказы" ? zakasLists : consultationList;
 
   return (
     <>
@@ -73,8 +135,8 @@ const Zakas = () => {
         <div className="flex justify-between items-center gap-4 mb-6">
           <Input
             style={{ height: "40px", borderRadius: "29px" }}
-            onChange={(e) => setName(e.target.value)}
-            value={name}
+            onChange={handleSearch}
+            value={search}
             className="h-[40px] rounded-[20px] w-full max-w-[250px]"
             placeholder="Найти"
             size="middle"
@@ -114,7 +176,7 @@ const Zakas = () => {
             <div>Цена(сум)</div>
             <div>Адрес</div>
             <div>Время</div>
-            <div>Действия</div>
+            <div className="pl-[20px]">Действия</div>
           </div>
         ) : (
           <div className="grid grid-cols-4 mt-[60px] pl-[60px] text-[#000000] py-2 mb-2 bg-[#FFFFFF] rounded-[30px] h-[55px] font-semibold">
@@ -147,35 +209,87 @@ const Zakas = () => {
                   {item.Products.price}
                 </div>
                 <div className="truncate max-w-[180px]">{item.adress}</div>
-                <div className="truncate max-w-[180px]">{item.createdAt}</div>
-                <div className="flex space-x-3 justify-center min-w-[100px]">
-                  <button className="text-yellow-500">
-                    <EditOutlined />
+                <div>{formatTime(item.createdAt)}</div>
+
+                <div className="flex space-x-3 justify-center mr-[50px] min-w-[100px]">
+                  <button
+                    onClick={() => handleCheckToggle(item.id)}
+                    className="text-blue-500"
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center ${
+                        checkedItems[item.id]
+                          ? "bg-green-500 text-white"
+                          : "bg-[#C6C6C6] text-black"
+                      }`}
+                    >
+                      ✔️
+                    </div>
                   </button>
-                  <button className="text-red-500">
+
+                  <button
+                    onClick={() => showDeleteModal(item.id)}
+                    className="text-red-500"
+                  >
                     <DeleteOutlined />
                   </button>
                 </div>
               </div>
             ))
-          : consultationData.map((item) => (
+          : consultationList.map((item: ConsultionType) => (
               <div
                 key={item.id}
                 className="grid grid-cols-4 items-center gap-2 mt-[20px] py-2 pl-[60px] bg-[#FFFFFF] rounded-[30px] h-[60px]"
               >
-                <div>{item.clientName}</div>
+                <div>{item.name}</div>
                 <div>{item.phone}</div>
-                <div>{item.time}</div>
-                <div className="space-x-2">
-                  <button className="text-blue-500">
-                    <EyeFilled />
+                <div>{formatTime(item.createdAt)}</div>
+
+                <div className="space-x-2 ">
+                  <button
+                    onClick={() => handleCheckToggle(item.id)}
+                    className="text-blue-500"
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full border-none flex items-center justify-center ${
+                        checkedItems[item.id]
+                          ? "bg-green-500 text-white"
+                          : "bg-[#C6C6C6] text-black"
+                      }`}
+                    >
+                      ✔️
+                    </div>
                   </button>
-                  <button className="text-red-500">
+
+                  <button
+                    onClick={() => showDeleteModal(item.id)}
+                    className="text-red-500"
+                  >
                     <DeleteOutlined />
                   </button>
                 </div>
               </div>
             ))}
+        <Modal
+          title="Вы уверены?"
+          open={isModalOpen}
+          onOk={() => {
+            if (selectId) {
+              selectedType === "Заказы"
+                ? deleteOrders(selectId)
+                : deleteConsultation(selectId);
+            }
+          }}
+          onCancel={() => setIsModalOpen(false)}
+          okText={
+            (selectedType === "Заказы" && isOrders) ||
+            (selectedType === "Консультации" && isConsul)
+              ? "Удаляется..."
+              : "Да"
+          }
+          cancelText="Нет"
+          confirmLoading={selectedType === "Заказы" ? isOrders : isConsul}
+        />
       </div>
     </>
   );

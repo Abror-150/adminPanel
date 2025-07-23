@@ -62,8 +62,8 @@ const Product = () => {
           console.error("Mahsulotlarni olish xatosi:", error.response?.data);
           throw error;
         }),
-    enabled: !!token,
   });
+  console.log(products);
 
   const { mutate: deleteProduct } = useMutation({
     mutationFn: (id: number) =>
@@ -201,7 +201,6 @@ const Product = () => {
                     <EditOutlined />
                   </button>
                   <Popconfirm
-                   
                     title="Вы уверены, что хотите удалить этот продукт?"
                     onConfirm={() => deleteProduct(item.id)}
                     okText="Да"

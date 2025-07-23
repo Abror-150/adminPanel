@@ -101,7 +101,11 @@ const ProductModal = ({
     mutationFn: (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return axios.post(`${API}/api/file/upload`, formData, {});
+      return axios.post(`${API}/api/file/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     },
     onSuccess: (res) => {
       const url = res.data?.link;
@@ -134,7 +138,11 @@ const ProductModal = ({
 
   const updateProduct = useMutation({
     mutationFn: (data: any) =>
-      axios.patch(`${API}/api/products/${initialData?.id}`, data, {}),
+      axios.patch(`${API}/api/products/${initialData?.id}`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
     onSuccess: () => {
       toast.success("Mahsulot yangilandi");
       queryClient.invalidateQueries({ queryKey: ["products"] });

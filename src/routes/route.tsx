@@ -10,5 +10,5 @@ const AuthRoute = () => {
     </Routes>
   );
 };
-
+1;
 export default AuthRoute;
