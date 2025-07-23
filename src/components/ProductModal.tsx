@@ -56,6 +56,7 @@ const ProductModal = ({
 
   useEffect(() => {
     if (editMode && initialData) {
+      
       form.setFieldsValue({
         category: initialData.Category?.name,
         quantity: initialData.quantity,
@@ -169,7 +170,7 @@ const ProductModal = ({
       );
       if (!selectedCategory) return toast.error("Kategoriya topilmadi");
 
-      const dataToSend = {
+      const dataToSend: any = {
         categoryId: selectedCategory.id,
         image: imageUrl.startsWith("http")
           ? imageUrl.split("/").pop()
@@ -178,12 +179,19 @@ const ProductModal = ({
         quantity: values.quantity,
         size: values.size || "",
         depth: values.depth || 0,
-        discountedPrice: values.discountedPrice || 0,
         frame_en: values.frame_en || "",
         frame_uz: values.frame_uz || "",
         frame_ru: values.frame_ru || "",
         status: values.status,
       };
+
+      if (
+        values.discountedPrice !== undefined &&
+        values.discountedPrice !== null &&
+        values.discountedPrice !== ""
+      ) {
+        dataToSend.discountedPrice = Number(values.discountedPrice);
+      }
 
       editMode
         ? updateProduct.mutate(dataToSend)
@@ -247,11 +255,13 @@ const ProductModal = ({
             <InputNumber min={1} className="w-full" />
           </Form.Item>
 
-          <Form.Item label="Стартая цена (сум) " name="discountedPrice">
+          <Form.Item label="Стартая цена (сум) " name="price" rules={[{required:true}]}>
             <InputNumber min={0} className="w-full" />
           </Form.Item>
-
-          <Form.Item label="Цена со скидкой (сум) " name="price">
+          <Form.Item
+            label="Цена со скидкой (сум)"
+            name="discountedPrice"
+          >
             <InputNumber min={0} className="w-full" />
           </Form.Item>
 
@@ -261,17 +271,29 @@ const ProductModal = ({
           <Form.Item label="Ramka (UZ)" name="frame_uz">
             <Input />
           </Form.Item>
-          <Form.Item label="Рамка (RU)" name="frame_ru">
+          <Form.Item
+            rules={[{ required: true }]}
+            label="Рамка (RU)"
+            name="frame_ru"
+          >
             <Input />
           </Form.Item>
-          <Form.Item label="Размер (м)" name="size">
+          <Form.Item
+            rules={[{ required: true }]}
+            label="Размер (м)"
+            name="size"
+          >
             <Input />
           </Form.Item>
-          <Form.Item label="Глубина(см)" name="depth">
+          <Form.Item
+            rules={[{ required: true }]}
+            label="Глубина(см)"
+            name="depth"
+          >
             <InputNumber min={0} className="w-full" />
           </Form.Item>
 
-          <Form.Item label="Статус" name="status">
+          <Form.Item rules={[{ required: true }]} label="Статус" name="status">
             <Select>
               <Option value="Recommend">Tavsiya qilamiz</Option>
               <Option value="Sale">Chegirma</Option>

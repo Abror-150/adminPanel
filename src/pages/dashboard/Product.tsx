@@ -63,7 +63,6 @@ const Product = () => {
           throw error;
         }),
   });
-  console.log(products);
 
   const { mutate: deleteProduct } = useMutation({
     mutationFn: (id: number) =>
@@ -188,7 +187,24 @@ const Product = () => {
                   />
                 </div>
 
-                <div className="text-base font-medium">{item.price}</div>
+                <div className="">
+                  {item.discountedPrice ? (
+                    <>
+                      <div className="text-black line-through decoration-red-500">
+                        <p>{item.price} сум</p>
+                      </div>
+
+                      <div className="font-semibold text-black">
+                        <p>{item.price - item.discountedPrice} сум</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-black font-semibold">
+                      <p>{item.price} сум</p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="text-base font-medium">{item.quantity}</div>
                 <div className="text-base font-medium">{item.frame_ru}</div>
                 <div className="text-base font-medium">{item.size}</div>

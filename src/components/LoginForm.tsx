@@ -39,7 +39,7 @@ const LoginForm: React.FC = () => {
 
     onError: (error: any) => {
       console.log("Login xatosi:", error.response?.data || error.message);
-      toast.error("Логин ёки пароль нотўғри!");
+      toast.error("пользователь не найден");
       setLoading(false);
     },
   });

@@ -23,7 +23,6 @@ const Zakas = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const searchQuery = useDebounce(search, 300);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loadingDelete, setLoadingDelete] = useState(false);
   const [selectId, setSelectedId] = useState<string | null>("");
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
@@ -45,6 +44,7 @@ const Zakas = () => {
         .then((res) => res.data?.data),
     enabled: selectedType === "Заказы",
   });
+  
 
   const { mutate: deleteOrders, isLoading: isOrders } = useMutation({
     mutationFn: (id: string) =>
@@ -104,6 +104,7 @@ const Zakas = () => {
         .then((res) => res.data?.data),
     enabled: selectedType == "Консультации",
   });
+  
   const [check, setCheck] = useState(false);
 
   const handleClick = () => {
@@ -217,7 +218,7 @@ const Zakas = () => {
                     className="text-blue-500"
                   >
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center ${
+                      className={`w-6 h-6 rounded-full border-none flex items-center justify-center ${
                         checkedItems[item.id]
                           ? "bg-green-500 text-white"
                           : "bg-[#C6C6C6] text-black"

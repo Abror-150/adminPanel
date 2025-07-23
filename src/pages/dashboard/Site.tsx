@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../hooks/getEnv";
 import axios from "axios";
 import type { SiteType } from "../../types/SiteType";
-import {  EditOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { EditOutlined } from "@ant-design/icons";
+import { useContext, useState } from "react";
 import { Modal, Form, Input, Button } from "antd";
 import { toast, ToastContainer } from "react-toastify";
-
+import { Context } from "../../context/Context";
 
 const Site = () => {
   const queryClient = useQueryClient();
@@ -17,6 +17,7 @@ const Site = () => {
     value: string;
   }>({ key: "phone", value: "" });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const {token} =  useContext(Context)
 
   const {
     data: site = [],
@@ -30,7 +31,11 @@ const Site = () => {
 
   const mutation = useMutation({
     mutationFn: ({ id, ...data }: { id: string; [key: string]: any }) =>
-      axios.patch(`${API}/api/site/${id}`, data),
+      axios.patch(`${API}/api/site/${id}`, data,{
+        headers:{
+          "Authorization":`Bearer ${token}`
+        }
+      }),
     onSuccess: () => {
       toast.success("Muvaffaqiyatli o‘zgartirildi");
       queryClient.invalidateQueries(["site"]);
@@ -77,35 +82,35 @@ const Site = () => {
 
   return (
     <>
-    <ToastContainer/>
-    <div className="p-[20px]">
-      {renderRow("Телефонный номер", "phone")}
-      {renderRow("Адрес", "adress_ru")}
-      {renderRow("Рабочее время", "workingHours")}
-      {renderRow("Телеграм", "telegramLink")}
-      {renderRow("Инстаграм", "instagramLink")}
+      <ToastContainer />
+      <div className="p-[20px]">
+        {renderRow("Телефонный номер", "phone")}
+        {renderRow("Адрес", "adress_ru")}
+        {renderRow("Рабочее время", "workingHours")}
+        {renderRow("Телеграм", "telegramLink")}
+        {renderRow("Инстаграм", "instagramLink")}
 
-      <Modal
-        title="Edit"
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={null}
-      >
-        <Form form={form} onFinish={handleFinish}>
-          <Form.Item
-            name="value"
-            rules={[{ required: true, message: "Please enter value" }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item className="flex justify-center">
-            <Button htmlType="submit" type="primary">
-              Save
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+        <Modal
+          title="Edit"
+          open={isModalOpen}
+          onCancel={() => setIsModalOpen(false)}
+          footer={null}
+        >
+          <Form form={form} onFinish={handleFinish}>
+            <Form.Item
+              name="value"
+              rules={[{ required: true, message: "Please enter value" }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item className="flex justify-center">
+              <Button htmlType="submit" type="primary">
+                Изменить
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </div>
     </>
   );
 };
