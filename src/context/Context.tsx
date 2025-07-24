@@ -31,6 +31,7 @@ export const GlobalContext: FC<{ children: ReactNode }> = ({ children }) => {
       setCookie("token", token, { path: "/" });
     }
   }, [token]);
+console.log(token);
 
   return (
     <Context.Provider value={{ setToken, token, showNavbar, setShowNavbar }}>

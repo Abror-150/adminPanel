@@ -15,11 +15,11 @@ const Header = () => {
   const { token, setToken } = useContext(Context);
   let currentAdminId = null;
   const navigate = useNavigate();
-  const [_, removeCookie] = useCookies(["token"]);
+  const [_, __, removeCookie] = useCookies(["token"]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (token) {
-    const decoded = jwtDecode<TokenType>(token);
+    const decoded = jwtDecode<TokenType>(String(token));
     currentAdminId = decoded.id;
   }
 

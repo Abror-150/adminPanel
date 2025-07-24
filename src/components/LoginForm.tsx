@@ -34,7 +34,7 @@ const LoginForm: React.FC = () => {
       setTimeout(() => {
         setLoading(false);
         navigate("/products");
-      }, 2000);
+      }, 1000);
     },
 
     onError: (error: any) => {
