@@ -12,7 +12,6 @@ import { UploadOutlined } from "@ant-design/icons";
 import { useContext, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import { Context } from "../context/Context";
 import { API } from "../hooks/getEnv";
 import { toast } from "react-toastify";
@@ -36,14 +35,8 @@ const ProductModal = ({
   const [imageUrl, setImageUrl] = useState("");
   const queryClient = useQueryClient();
   const { token } = useContext(Context);
-  const decoded: any = token ? jwtDecode(token) : {};
-  const adminId = decoded?.id;
 
-  const {
-    data: categories = [],
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: categories = [], isLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: () =>
       axios
@@ -56,7 +49,6 @@ const ProductModal = ({
 
   useEffect(() => {
     if (editMode && initialData) {
-      
       form.setFieldsValue({
         category: initialData.Category?.name,
         quantity: initialData.quantity,
@@ -255,13 +247,14 @@ const ProductModal = ({
             <InputNumber min={1} className="w-full" />
           </Form.Item>
 
-          <Form.Item label="Стартая цена (сум) " name="price" rules={[{required:true}]}>
+          <Form.Item
+            label="Стартая цена (сум) "
+            name="price"
+            rules={[{ required: true }]}
+          >
             <InputNumber min={0} className="w-full" />
           </Form.Item>
-          <Form.Item
-            label="Цена со скидкой (сум)"
-            name="discountedPrice"
-          >
+          <Form.Item label="Цена со скидкой (сум)" name="discountedPrice">
             <InputNumber min={0} className="w-full" />
           </Form.Item>
 

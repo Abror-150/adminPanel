@@ -1,5 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import { paths } from "../hooks/paths";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { API } from "../hooks/getEnv";
@@ -7,7 +6,6 @@ import { useContext, useState } from "react";
 import { Context } from "../context/Context";
 import { jwtDecode } from "jwt-decode";
 import { useCookies } from "react-cookie";
-import Cookies from "js-cookie";
 import { Modal } from "antd";
 
 interface TokenType {
@@ -17,7 +15,7 @@ const Header = () => {
   const { token, setToken } = useContext(Context);
   let currentAdminId = null;
   const navigate = useNavigate();
-  const [cookies, setCookie, removeCookie] = useCookies(["token"]);
+  const [_, removeCookie] = useCookies(["token"]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (token) {

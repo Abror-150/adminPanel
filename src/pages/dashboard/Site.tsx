@@ -17,13 +17,9 @@ const Site = () => {
     value: string;
   }>({ key: "phone", value: "" });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const {token} =  useContext(Context)
+  const { token } = useContext(Context);
 
-  const {
-    data: site = [],
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: site = [] } = useQuery({
     queryKey: ["site"],
     queryFn: () =>
       axios.get(`${API}/api/site`).then((res) => res.data?.data || []),
@@ -31,14 +27,14 @@ const Site = () => {
 
   const mutation = useMutation({
     mutationFn: ({ id, ...data }: { id: string; [key: string]: any }) =>
-      axios.patch(`${API}/api/site/${id}`, data,{
-        headers:{
-          "Authorization":`Bearer ${token}`
-        }
+      axios.patch(`${API}/api/site/${id}`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }),
     onSuccess: () => {
       toast.success("Muvaffaqiyatli o‘zgartirildi");
-      queryClient.invalidateQueries(["site"]);
+      queryClient.invalidateQueries({ queryKey: ["site"] });
     },
     onError: () => {
       toast.error("O‘zgartirishda xatolik");

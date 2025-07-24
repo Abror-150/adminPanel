@@ -9,6 +9,7 @@ export interface ProductType {
   price: number;
   quantity: number;
   size: string;
+  status?: "Recommend" | "Sale" | "OutOfStock" | "Block";
   Category: {
     id: string;
     name: string;

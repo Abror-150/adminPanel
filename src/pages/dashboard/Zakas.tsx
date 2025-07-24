@@ -1,9 +1,4 @@
-import {
-  DeleteOutlined,
-  EditOutlined,
-  EyeFilled,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input, Modal } from "antd";
 import axios from "axios";
@@ -20,10 +15,10 @@ const Zakas = () => {
   const queryClient = useQueryClient();
   const { token } = useContext(Context);
   const [search, setSearch] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [_, setLoading] = useState<boolean>(false);
   const searchQuery = useDebounce(search, 300);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectId, setSelectedId] = useState<string | null>("");
+  const [selectId, setSelectedId] = useState<number | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
   const [selectedType, setSelectedType] = useState<"Заказы" | "Консультации">(
@@ -44,9 +39,8 @@ const Zakas = () => {
         .then((res) => res.data?.data),
     enabled: selectedType === "Заказы",
   });
-  
 
-  const { mutate: deleteOrders, isLoading: isOrders } = useMutation({
+  const { mutate: deleteOrders, isPending: isOrders } = useMutation({
     mutationFn: (id: string) =>
       axios.delete(`${API}/api/orders/${id}`, {
         headers: {
@@ -69,7 +63,7 @@ const Zakas = () => {
       setIsModalOpen(false);
     },
   });
-  const { mutate: deleteConsultation, isLoading: isConsul } = useMutation({
+  const { mutate: deleteConsultation, isPending: isConsul } = useMutation({
     mutationFn: (id: string) =>
       axios.delete(`${API}/api/consultatsiya/${id}`, {
         headers: {
@@ -104,12 +98,7 @@ const Zakas = () => {
         .then((res) => res.data?.data),
     enabled: selectedType == "Консультации",
   });
-  
-  const [check, setCheck] = useState(false);
 
-  const handleClick = () => {
-    setCheck((prev) => !prev);
-  };
   function handleSearch(e: ChangeEvent<HTMLInputElement>) {
     setLoading(true);
     setSearch(e.target.value);
@@ -124,9 +113,6 @@ const Zakas = () => {
       [id]: !prev[id],
     }));
   };
-
-  const dataToRender =
-    selectedType === "Заказы" ? zakasLists : consultationList;
 
   return (
     <>
@@ -277,8 +263,8 @@ const Zakas = () => {
           onOk={() => {
             if (selectId) {
               selectedType === "Заказы"
-                ? deleteOrders(selectId)
-                : deleteConsultation(selectId);
+                ? deleteOrders(String(selectId))
+                : deleteConsultation(String(selectId));
             }
           }}
           onCancel={() => setIsModalOpen(false)}

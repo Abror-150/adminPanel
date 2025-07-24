@@ -18,7 +18,7 @@ const Product = () => {
   const queryClient = useQueryClient();
   const { token } = useContext(Context);
   const [search, setSearch] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [_, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
